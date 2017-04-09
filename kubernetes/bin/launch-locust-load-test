@@ -10,7 +10,9 @@ import collections
 LOCUST_JSON_CMD = 'cat ${STARTUP_DIR}/../conf/dev/locust-${TYPE}.json.template | sed -e "s|%SELDON_JS_KEY%|${SELDON_JS_KEY}|" | sed -e "s|%SELDON_OAUTH_KEY%|${SELDON_OAUTH_KEY}|" | sed -e "s|%SELDON_OAUTH_SECRET%|${SELDON_OAUTH_SECRET}|" | sed -e "s|%LOCUST_HATCH_RATE%|${LOCUST_HATCH_RATE}|" | sed -e "s|%LOCUST_CLIENTS%|${LOCUST_CLIENTS}|" | sed -e "s|%LOCUST_SCRIPT%|${LOCUST_SCRIPT}|" | sed -e "s|%SELDON_OAUTH_ENDPOINT%|${SELDON_OAUTH_ENDPOINT}|" | sed -e "s|%SELDON_GRPC_ENDPOINT%|${SELDON_GRPC_ENDPOINT}|" | sed -e "s|%SELDON_DEFAULT_DATA_SIZE%|${SELDON_DEFAULT_DATA_SIZE}|" > ${STARTUP_DIR}/../conf/dev/locust-${TYPE}.json'
 
 
-KUBECTL_CMD_APPLY = 'kubectl apply -f ${STARTUP_DIR}/../conf/dev/locust-${TYPE}.json'
+K8S_NAMESPACE = os.getenv('K8S_NAMESPACE', 'default')
+
+KUBECTL_CMD_APPLY = 'kubectl --namespace=' + K8S_NAMESPACE + ' apply -f ${STARTUP_DIR}/../conf/dev/locust-${TYPE}.json'
 
 CLI_JS_KEYS_CMD = "seldon-cli --quiet keys --client-name ${CLIENT} --scope js"
 CLI_OAUTH_KEYS_CMD = "seldon-cli --quiet keys --client-name ${CLIENT} --scope all"
@@ -27,7 +29,7 @@ class LocustLauncher(object):
 
     def __init__(self,replicas=1):
         self.script_folder = os.path.dirname(os.path.realpath(__file__))
-    
+
     def createLocustKubernetestConf(self,args):
         (jsKey,oauthKey,oauthSecret) = self.getKeys(args.seldon_client)
         cmd = LOCUST_JSON_CMD.replace("${TYPE}","master").replace("${STARTUP_DIR}",self.script_folder).replace("${LOCUST_HATCH_RATE}",str(args.locust_hatch_rate)).replace("${LOCUST_CLIENTS}",str(args.locust_clients)).replace("${SELDON_JS_KEY}",jsKey).replace("${SELDON_OAUTH_KEY}",oauthKey).replace("${SELDON_OAUTH_SECRET}",oauthSecret).replace("${LOCUST_SCRIPT}",SCRIPT_MAP[args.test_type]).replace("${SELDON_OAUTH_ENDPOINT}",args.seldon_oauth_endpoint).replace("${SELDON_GRPC_ENDPOINT}",args.seldon_grpc_endpoint).replace("${SELDON_DEFAULT_DATA_SIZE}",str(args.seldon_predict_default_data_size))
@@ -50,7 +52,7 @@ class LocustLauncher(object):
         retcode = call(cmd, shell=True)
         if not retcode == 0:
             raise LocustLaunchError("failed to start locust slave")
-        
+
 
     def getKeys(self,client):
         cmd = CLI_JS_KEYS_CMD.replace("${CLIENT}",client)
@@ -70,7 +72,7 @@ class LocustLauncher(object):
         print "Launched load test"
 
 
-    
+
 
 if __name__ == '__main__':
     import logging
@@ -91,6 +93,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     opts = vars(args)
 
-    
+
     launcher = LocustLauncher()
     launcher.run(args)

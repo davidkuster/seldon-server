@@ -59,7 +59,7 @@ REC_CMD_COMMIT = "seldon-cli rec_alg --action commit --client-name ${CLIENT}"
 
 PRED_VARIATIONS_CONFIG = """
 {
-    "variations": 
+    "variations":
     [
     ]
 }
@@ -128,7 +128,9 @@ MICRO_PIPELINE_REST_JSON_CMD = 'cat ${STARTUP_DIR}/../conf/microservice_pipeline
 
 MICRO_PIPELINE_RPC_JSON_CMD = 'cat ${STARTUP_DIR}/../conf/microservice_pipeline.rpc.template | sed -e "s|%NAME%|${NAME}|" | sed -e "s|%PIPELINE_FOLDER%|${PIPELINE_FOLDER}|" | sed -e "s|%REPLICAS%|${REPLICAS}|" > ${STARTUP_DIR}/../conf/microservices/microservice-${NAME}.json'
 
-KUBECTL_CMD_APPLY = 'kubectl apply -f ${STARTUP_DIR}/../conf/microservices/microservice-${NAME}.json'
+K8S_NAMESPACE = os.getenv('K8S_NAMESPACE', 'default')
+
+KUBECTL_CMD_APPLY = 'kubectl --namespace=' + K8S_NAMESPACE + ' apply -f ${STARTUP_DIR}/../conf/microservices/microservice-${NAME}.json'
 
 class MicroserviceError(Exception):
     def __init__(self, value):
@@ -142,7 +144,7 @@ class MicroserviceRunner(object):
         self.script_folder = os.path.dirname(os.path.realpath(__file__))
         self.replicas = replicas
         print "Replicas is ",self.replicas
-    
+
     def kubectl_create_microservice(self,micro):
         if type(micro) is Microservice:
             cmd = MICRO_IMAGE_JSON_CMD.replace("${NAME}",micro.name).replace("${IMAGE}",micro.image).replace("${REPLICAS}",str(self.replicas)).replace("${STARTUP_DIR}",self.script_folder)
@@ -307,7 +309,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     opts = vars(args)
 
-    
+
     runner = MicroserviceRunner(args.replicas)
     runner.checkArgs(args)
     runner.run(args.type,args.client,args.i + args.p)
