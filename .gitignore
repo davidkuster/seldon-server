@@ -30,3 +30,7 @@ datanucleus_enhancer.log*
 
 *~
 
+# generated config files
+build/build_versions_generated
+kubernetes/conf/**/*.json
+kubernetes/conf/**/*.template
